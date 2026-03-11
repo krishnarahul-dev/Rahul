@@ -1,0 +1,122 @@
+<!-- Loading state -->
+<div *ngIf="loading" class="loading-container">
+  <div class="loading-dots">
+    <span class="dot"></span>
+    <span class="dot"></span>
+    <span class="dot"></span>
+  </div>
+</div>
+
+<!-- Chat panel -->
+<div *ngIf="!loading" class="chat-panel">
+
+  <!-- ── Header ──────────────────────────────────────── -->
+  <div class="header">
+    <div class="header-icon">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24"
+           stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03
+                 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512
+                 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+      </svg>
+    </div>
+
+    <div class="header-text">
+      <h2 class="header-title">
+        {{ conversation?.title || 'Workflow #' + workflowId }}
+      </h2>
+      <span class="header-subtitle">
+        {{ conversation?.participants?.length || 0 }} participants
+      </span>
+    </div>
+
+    <!-- Participant avatars -->
+    <div class="participant-avatars">
+      <div
+        *ngFor="let p of (conversation?.participants || []).slice(0, 3); let i = index"
+        class="participant-avatar"
+        [style.background]="getAvatarColor(p.name)"
+        [style.z-index]="5 - i"
+        [style.margin-left.px]="i === 0 ? 0 : -8"
+        [title]="p.name"
+      >
+        {{ p.name.charAt(0) }}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Message list ────────────────────────────────── -->
+  <div #scrollContainer class="message-list">
+
+    <!-- Empty state -->
+    <div *ngIf="messages.length === 0" class="empty-state">
+      <svg width="48" height="48" fill="none" viewBox="0 0 24 24"
+           stroke="currentColor" stroke-width="1.2" class="empty-icon">
+        <path stroke-linecap="round" stroke-linejoin="round"
+              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03
+                 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512
+                 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+      </svg>
+      <p class="empty-title">No messages yet</p>
+      <p class="empty-subtitle">Start the conversation for this workflow</p>
+    </div>
+
+    <!-- Messages -->
+    <cflow-message-bubble
+      *ngFor="let msg of messages; let i = index; trackBy: trackByMessageId"
+      [message]="msg"
+      [isOwn]="isOwnMessage(msg)"
+      [showAvatar]="shouldShowAvatar(i)"
+    ></cflow-message-bubble>
+
+    <!-- Typing indicator -->
+    <div *ngIf="typingNames.length > 0" class="typing-indicator">
+      <div class="typing-dots-sm">
+        <span class="dot-sm"></span>
+        <span class="dot-sm"></span>
+        <span class="dot-sm"></span>
+      </div>
+      <span class="typing-text">
+        {{ typingNames.join(', ') }}
+        {{ typingNames.length === 1 ? 'is' : 'are' }} typing…
+      </span>
+    </div>
+  </div>
+
+  <!-- ── Input area ──────────────────────────────────── -->
+  <div class="input-area">
+    <!-- Mention dropdown -->
+    <cflow-mention-dropdown
+      *ngIf="showMentions"
+      [results]="mentionResults"
+      [activeIndex]="mentionIndex"
+      (selectUser)="insertMention($event)"
+    ></cflow-mention-dropdown>
+
+    <div class="input-wrapper">
+      <textarea
+        #messageInput
+        [(ngModel)]="inputText"
+        (ngModelChange)="onInputChange()"
+        (keydown)="onKeyDown($event)"
+        placeholder="Type a message… (use @ to mention)"
+        rows="1"
+        class="message-textarea"
+      ></textarea>
+
+      <button
+        class="send-btn"
+        [class.active]="inputText.trim().length > 0"
+        [disabled]="!inputText.trim()"
+        (click)="send()"
+      >
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24"
+             stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
