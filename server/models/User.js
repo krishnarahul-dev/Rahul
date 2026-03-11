@@ -1,39 +1,38 @@
 const db = require("../config/db");
 
 const User = {
-  /**
-   * Find or create a user from Cflow session data.
-   * Called on every socket connection / API hit so the local
-   * users table stays in sync with Cflow's user directory.
-   */
-  async upsert({ cflow_id, name, email, avatar_url }) {
+  async upsert({ cflow_id, name, email }) {
     const { rows } = await db.query(
-      `INSERT INTO users (cflow_id, name, email, avatar_url)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO users (cflow_id, name, email)
+       VALUES ($1, $2, $3)
        ON CONFLICT (cflow_id) DO UPDATE
-         SET name       = EXCLUDED.name,
-             email      = EXCLUDED.email,
-             avatar_url = EXCLUDED.avatar_url
+         SET name  = EXCLUDED.name,
+             email = EXCLUDED.email
        RETURNING *`,
-      [cflow_id, name, email, avatar_url || null]
+      [cflow_id, name, email]
     );
     return rows[0];
   },
 
   async findById(id) {
-    const { rows } = await db.query("SELECT * FROM users WHERE id = $1", [id]);
+    const { rows } = await db.query(
+      "SELECT * FROM users WHERE id = $1",
+      [id]
+    );
     return rows[0] || null;
   },
 
   async findByCflowId(cflowId) {
-    const { rows } = await db.query("SELECT * FROM users WHERE cflow_id = $1", [cflowId]);
+    const { rows } = await db.query(
+      "SELECT * FROM users WHERE cflow_id = $1",
+      [cflowId]
+    );
     return rows[0] || null;
   },
 
-  /** Search users by name prefix (used for @mention autocomplete). */
   async search(query, limit = 10) {
     const { rows } = await db.query(
-      `SELECT id, cflow_id, name, email, avatar_url
+      `SELECT id, cflow_id, name, email
        FROM users
        WHERE name ILIKE $1
        ORDER BY name
@@ -43,10 +42,9 @@ const User = {
     return rows;
   },
 
-  /** Get all participants in a conversation. */
   async getByConversation(conversationId) {
     const { rows } = await db.query(
-      `SELECT u.id, u.cflow_id, u.name, u.email, u.avatar_url
+      `SELECT u.id, u.cflow_id, u.name, u.email
        FROM users u
        JOIN conversation_participants cp ON cp.user_id = u.id
        WHERE cp.conversation_id = $1
