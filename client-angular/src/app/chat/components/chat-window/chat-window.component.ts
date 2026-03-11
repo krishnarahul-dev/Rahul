@@ -262,25 +262,10 @@ export class ChatWindowComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
-send(): void {
-  const text = this.inputText.trim();
-  if (!text || !this.conversation) return;
-
-  const sender = (this.conversation.participants || []).find(
-    (p: any) =>
-      p.cflow_id === this.currentUser.cflow_id ||
-      p.email === this.currentUser.email ||
-      p.id === this.currentUser.id
-  );
-
-  if (!sender) {
-    console.error('Sender not found in conversation participants');
-    return;
-  }
-
+private postMessage(senderId: string, text: string): void {
   this.api.sendMessage({
-    conversation_id: this.conversation.id,
-    sender_id: sender.id,
+    conversation_id: this.conversation!.id,
+    sender_id: senderId,
     message: text
   }).subscribe({
     next: (msg: any) => {
@@ -295,6 +280,59 @@ send(): void {
     },
     error: (err: any) => {
       console.error('Send message failed:', err);
+    }
+  });
+}
+
+send(): void {
+  const text = this.inputText.trim();
+  if (!text || !this.conversation) return;
+
+  const existingParticipant = (this.conversation.participants || []).find(
+    (p: any) =>
+      p.cflow_id === this.currentUser.cflow_id ||
+      p.email === this.currentUser.email ||
+      p.id === this.currentUser.id
+  );
+
+  if (existingParticipant) {
+    this.postMessage(existingParticipant.id, text);
+    return;
+  }
+
+  this.api.searchUsers(this.currentUser.email || this.currentUser.name).subscribe({
+    next: (users: any[]) => {
+      const matchedUser = users.find(
+        (u: any) =>
+          u.email === this.currentUser.email ||
+          u.cflow_id === this.currentUser.cflow_id ||
+          u.id === this.currentUser.id
+      );
+
+      if (!matchedUser) {
+        console.error('Current user not found in backend users table');
+        return;
+      }
+
+      this.api.addParticipant(this.conversation!.id, matchedUser.id).subscribe({
+        next: () => {
+          this.conversation = {
+            ...this.conversation!,
+            participants: [
+              ...(this.conversation?.participants || []),
+              matchedUser
+            ]
+          };
+
+          this.postMessage(matchedUser.id, text);
+        },
+        error: (err: any) => {
+          console.error('Failed to add participant before sending:', err);
+        }
+      });
+    },
+    error: (err: any) => {
+      console.error('Failed to search current user before sending:', err);
     }
   });
 }
