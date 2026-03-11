@@ -9,7 +9,7 @@ export class ChatApiService {
    * Base URL for the chat server.
    * Override via environment config or provider token in production.
    */
-  private baseUrl = '/api';
+  private baseUrl = 'https://cflow-chat-server.onrender.com/api';
 
   constructor(private http: HttpClient) {}
 

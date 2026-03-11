@@ -6,7 +6,7 @@ import { ChatMessage, ChatUser, TypingEvent } from '../models/chat.models';
 @Injectable({ providedIn: 'root' })
 export class ChatSocketService implements OnDestroy {
   private socket: Socket | null = null;
-  private serverUrl = '';
+  private serverUrl = 'https://cflow-chat-server.onrender.com';
 
   // ── Observable streams for components to subscribe to ──
   private messageSubject = new Subject<ChatMessage>();
