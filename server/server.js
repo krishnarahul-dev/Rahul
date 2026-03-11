@@ -16,24 +16,9 @@ const registerSocket = require("./socket");
 const app = express();
 const server = http.createServer(app);
 
-const allowedOrigins = (
-  process.env.CORS_ORIGINS ||
-  "http://localhost:5173,http://localhost:4200,https://rahul-green.vercel.app"
-)
-  .split(",")
-  .map((o) => o.trim())
-  .filter(Boolean);
-
+// Temporary open CORS for testing
 app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    return callback(new Error(`CORS blocked for origin: ${origin}`));
-  },
+  origin: true,
   credentials: true,
 }));
 
@@ -52,12 +37,12 @@ app.use("/api/users", require("./routes/users"));
 // ── Socket.io setup ────────────────────────────────────────
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: true,
     methods: ["GET", "POST"],
     credentials: true,
   },
-  pingTimeout: 60_000,
-  pingInterval: 25_000,
+  pingTimeout: 60000,
+  pingInterval: 25000,
 });
 
 // Make io available in controllers (for REST-based message sends)
