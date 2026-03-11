@@ -37,22 +37,18 @@ import { MentionDropdownComponent } from '../mention-dropdown/mention-dropdown.c
   styleUrls: ['./chat-window.component.css'],
 })
 export class ChatWindowComponent implements OnInit, OnDestroy, OnChanges {
-  // ── Inputs (provided by the host Cflow page) ──────────
   @Input() workflowId!: string;
   @Input() currentUser!: ChatUser;
 
-  // ── Template refs ─────────────────────────────────────
   @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLDivElement>;
   @ViewChild('messageInput') messageInput!: ElementRef<HTMLTextAreaElement>;
 
-  // ── State ─────────────────────────────────────────────
   conversation: Conversation | null = null;
   messages: ChatMessage[] = [];
   inputText = '';
   loading = true;
-  typingUsers: Map<string, string> = new Map(); // user_id → name
+  typingUsers: Map<string, string> = new Map();
 
-  // Mentions
   mentionResults: ChatUser[] = [];
   mentionIndex = 0;
   showMentions = false;
@@ -67,15 +63,12 @@ export class ChatWindowComponent implements OnInit, OnDestroy, OnChanges {
     private cdr: ChangeDetectorRef
   ) {}
 
-  // ── Lifecycle ─────────────────────────────────────────
-
   ngOnInit(): void {
     this.setupMentionSearch();
     this.loadChat();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
-    // Reload if workflowId or user changes
     if (
       (changes['workflowId'] && !changes['workflowId'].firstChange) ||
       (changes['currentUser'] && !changes['currentUser'].firstChange)
@@ -84,6 +77,8 @@ export class ChatWindowComponent implements OnInit, OnDestroy, OnChanges {
       this.messages = [];
       this.conversation = null;
       this.loading = true;
+      this.mentionResults = [];
+      this.showMentions = false;
       this.cdr.markForCheck();
       this.loadChat();
     }
@@ -95,8 +90,6 @@ export class ChatWindowComponent implements OnInit, OnDestroy, OnChanges {
     this.socket.disconnect();
     if (this.typingTimeout) clearTimeout(this.typingTimeout);
   }
-
-  // ── Data loading ──────────────────────────────────────
 
   private loadChat(): void {
     this.api.getConversation(this.workflowId).subscribe({
@@ -129,13 +122,22 @@ export class ChatWindowComponent implements OnInit, OnDestroy, OnChanges {
     });
   }
 
-  // ── Socket connection ─────────────────────────────────
+  private refreshConversation(): void {
+    this.api.getConversation(this.workflowId).subscribe({
+      next: (convo) => {
+        this.conversation = convo;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('[Chat] Failed to refresh conversation:', err);
+      }
+    });
+  }
 
   private connectSocket(): void {
     this.socket.connect(this.workflowId, this.currentUser);
 
     this.socket.message$.pipe(takeUntil(this.destroy$)).subscribe((msg) => {
-      // Deduplicate
       if (!this.messages.some((m) => m.id === msg.id)) {
         this.messages = [...this.messages, msg];
         this.cdr.markForCheck();
@@ -154,9 +156,19 @@ export class ChatWindowComponent implements OnInit, OnDestroy, OnChanges {
       this.typingUsers.delete(evt.user_id);
       this.cdr.markForCheck();
     });
-  }
 
-  // ── Mention autocomplete ──────────────────────────────
+    this.socket.userJoined$.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.refreshConversation();
+    });
+
+    this.socket.userLeft$.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.refreshConversation();
+    });
+
+    setTimeout(() => {
+      this.refreshConversation();
+    }, 1000);
+  }
 
   private setupMentionSearch(): void {
     this.mentionSearch$
@@ -216,19 +228,15 @@ export class ChatWindowComponent implements OnInit, OnDestroy, OnChanges {
     setTimeout(() => el?.focus(), 0);
   }
 
-  // ── Event handlers ────────────────────────────────────
-
   onInputChange(): void {
     this.detectMention();
 
-    // Typing indicator
     this.socket.emitTyping();
     if (this.typingTimeout) clearTimeout(this.typingTimeout);
     this.typingTimeout = setTimeout(() => this.socket.emitStopTyping(), 1500);
   }
 
   onKeyDown(event: KeyboardEvent): void {
-    // Mention navigation
     if (this.showMentions && this.mentionResults.length > 0) {
       if (event.key === 'ArrowDown') {
         event.preventDefault();
@@ -255,89 +263,87 @@ export class ChatWindowComponent implements OnInit, OnDestroy, OnChanges {
       }
     }
 
-    // Send on Enter
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       this.send();
     }
   }
 
-private postMessage(senderId: string, text: string): void {
-  this.api.sendMessage({
-    conversation_id: this.conversation!.id,
-    sender_id: senderId,
-    message: text
-  }).subscribe({
-    next: (msg: any) => {
-      this.messages = [...this.messages, msg];
-      this.inputText = '';
-      this.showMentions = false;
-      this.cdr.markForCheck();
-      setTimeout(() => {
-        this.scrollToBottom();
-        this.messageInput?.nativeElement?.focus();
-      }, 0);
-    },
-    error: (err: any) => {
-      console.error('Send message failed:', err);
-    }
-  });
-}
-
-send(): void {
-  const text = this.inputText.trim();
-  if (!text || !this.conversation) return;
-
-  const existingParticipant = (this.conversation.participants || []).find(
-    (p: any) =>
-      p.cflow_id === this.currentUser.cflow_id ||
-      p.email === this.currentUser.email ||
-      p.id === this.currentUser.id
-  );
-
-  if (existingParticipant) {
-    this.postMessage(existingParticipant.id, text);
-    return;
+  private postMessage(senderId: string, text: string): void {
+    this.api.sendMessage({
+      conversation_id: this.conversation!.id,
+      sender_id: senderId,
+      message: text
+    }).subscribe({
+      next: (msg: any) => {
+        this.messages = [...this.messages, msg];
+        this.inputText = '';
+        this.showMentions = false;
+        this.cdr.markForCheck();
+        setTimeout(() => {
+          this.scrollToBottom();
+          this.messageInput?.nativeElement?.focus();
+        }, 0);
+      },
+      error: (err: any) => {
+        console.error('Send message failed:', err);
+      }
+    });
   }
 
-  this.api.searchUsers(this.currentUser.email || this.currentUser.name).subscribe({
-    next: (users: any[]) => {
-      const matchedUser = users.find(
-        (u: any) =>
-          u.email === this.currentUser.email ||
-          u.cflow_id === this.currentUser.cflow_id ||
-          u.id === this.currentUser.id
-      );
+  send(): void {
+    const text = this.inputText.trim();
+    if (!text || !this.conversation) return;
 
-      if (!matchedUser) {
-        console.error('Current user not found in backend users table');
-        return;
-      }
+    const existingParticipant = (this.conversation.participants || []).find(
+      (p: any) =>
+        p.cflow_id === this.currentUser.cflow_id ||
+        p.email === this.currentUser.email ||
+        p.id === this.currentUser.id
+    );
 
-      this.api.addParticipant(this.conversation!.id, matchedUser.id).subscribe({
-        next: () => {
-          this.conversation = {
-            ...this.conversation!,
-            participants: [
-              ...(this.conversation?.participants || []),
-              matchedUser
-            ]
-          };
-
-          this.postMessage(matchedUser.id, text);
-        },
-        error: (err: any) => {
-          console.error('Failed to add participant before sending:', err);
-        }
-      });
-    },
-    error: (err: any) => {
-      console.error('Failed to search current user before sending:', err);
+    if (existingParticipant) {
+      this.postMessage(existingParticipant.id, text);
+      return;
     }
-  });
-}
 
-  // ── Helpers ───────────────────────────────────────────
+    this.api.searchUsers(this.currentUser.email || this.currentUser.name).subscribe({
+      next: (users: any[]) => {
+        const matchedUser = users.find(
+          (u: any) =>
+            u.email === this.currentUser.email ||
+            u.cflow_id === this.currentUser.cflow_id ||
+            u.id === this.currentUser.id
+        );
+
+        if (!matchedUser) {
+          console.error('Current user not found in backend users table');
+          return;
+        }
+
+        this.api.addParticipant(this.conversation!.id, matchedUser.id).subscribe({
+          next: () => {
+            this.conversation = {
+              ...this.conversation!,
+              participants: [
+                ...(this.conversation?.participants || []),
+                matchedUser
+              ]
+            };
+
+            this.postMessage(matchedUser.id, text);
+            this.refreshConversation();
+          },
+          error: (err: any) => {
+            console.error('Failed to add participant before sending:', err);
+          }
+        });
+      },
+      error: (err: any) => {
+        console.error('Failed to search current user before sending:', err);
+      }
+    });
+  }
 
   private scrollToBottom(): void {
     setTimeout(() => {
@@ -365,15 +371,15 @@ send(): void {
   }
 
   isOwnMessage(msg: ChatMessage): boolean {
-  const sender = msg.sender;
+    const sender = msg.sender;
 
-  return !!(
-    sender?.id === this.currentUser.id ||
-    sender?.cflow_id === this.currentUser.cflow_id ||
-    sender?.email === this.currentUser.email ||
-    msg.sender_id === this.currentUser.id
-  );
-}
+    return !!(
+      sender?.id === this.currentUser.id ||
+      sender?.cflow_id === this.currentUser.cflow_id ||
+      sender?.email === this.currentUser.email ||
+      msg.sender_id === this.currentUser.id
+    );
+  }
 
   trackByMessageId(_: number, msg: ChatMessage): string {
     return msg.id;
