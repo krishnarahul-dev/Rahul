@@ -5,107 +5,197 @@
  * Clients join a room by emitting `join_workflow` with the workflow_id.
  * Messages are broadcast to the room via `receive_message`.
  */
+
 const Message = require("./models/Message");
 const Conversation = require("./models/Conversation");
 const User = require("./models/User");
 
 function registerSocket(io) {
+
   io.on("connection", (socket) => {
     console.log(`[WS] Client connected: ${socket.id}`);
 
     /**
-     * join_workflow — called when a user opens a workflow chat panel.
-     * Payload: { workflow_id, user: { cflow_id, name, email } }
+     * join_workflow
+     * Payload:
+     * {
+     *   workflow_id: string,
+     *   user: { cflow_id, name, email }
+     * }
      */
     socket.on("join_workflow", async (payload) => {
       try {
-        const { workflow_id, user } = payload;
-        if (!workflow_id || !user?.cflow_id) return;
 
-        // Upsert user so we always have a local record
-        const dbUser = await User.upsert(user);
+        const { workflow_id, user } = payload || {};
 
-        // Ensure conversation exists
-        const convo = await Conversation.getOrCreate(workflow_id);
+        if (!workflow_id) return;
+        if (!user) return;
+        if (!user.cflow_id) return;
 
-        // Add as participant
-        await Conversation.addParticipant(convo.id, dbUser.id);
+        /* ─────────────────────────────
+           Ensure local user record
+        ───────────────────────────── */
 
-        // Join the Socket.io room keyed by workflow_id
+        const dbUser = await User.upsert({
+          cflow_id: user.cflow_id,
+          name: user.name || "Unknown",
+          email: user.email || null
+        });
+
+        /* ─────────────────────────────
+           Ensure conversation exists
+        ───────────────────────────── */
+
+        const conversation = await Conversation.getOrCreate(workflow_id);
+
+        /* ─────────────────────────────
+           Attach participant
+        ───────────────────────────── */
+
+        await Conversation.addParticipant(
+          conversation.id,
+          dbUser.id
+        );
+
+        /* ─────────────────────────────
+           Join workflow room
+        ───────────────────────────── */
+
         socket.join(workflow_id);
 
-        // Attach metadata to socket for later use
-        socket.data = { user: dbUser, workflow_id, conversation_id: convo.id };
+        /* ─────────────────────────────
+           Attach socket metadata
+        ───────────────────────────── */
+
+        socket.data = {
+          user: dbUser,
+          workflow_id,
+          conversation_id: conversation.id
+        };
 
         console.log(`[WS] ${dbUser.name} joined room ${workflow_id}`);
 
-        // Notify others
+        /* ─────────────────────────────
+           Notify others
+        ───────────────────────────── */
+
         socket.to(workflow_id).emit("user_joined", {
-          user: { id: dbUser.id, name: dbUser.name },
-          workflow_id,
+          user: {
+            id: dbUser.id,
+            name: dbUser.name
+          },
+          workflow_id
         });
+
       } catch (err) {
-        console.error("[WS] join_workflow error:", err.message);
-        socket.emit("error_event", { message: "Failed to join workflow room." });
+
+        console.error("[WS] join_workflow error:", err);
+
+        socket.emit("error_event", {
+          message: "Failed to join workflow room"
+        });
+
       }
     });
 
+
     /**
-     * send_message — persist + broadcast a new chat message.
-     * Payload: { message: string }
+     * send_message
+     * Payload:
+     * { message: string }
      */
+
     socket.on("send_message", async (payload) => {
+
       try {
-        const { message } = payload;
+
+        const messageText = payload?.message?.trim();
+
         const { user, workflow_id, conversation_id } = socket.data || {};
 
-        if (!user || !conversation_id || !message?.trim()) return;
+        if (!messageText) return;
+        if (!user) return;
+        if (!conversation_id) return;
 
-        const saved = await Message.create({
+        const savedMessage = await Message.create({
           conversationId: conversation_id,
           senderId: user.id,
-          message: message.trim(),
+          message: messageText
         });
 
-        // Broadcast to everyone in the room (including sender)
-        io.to(workflow_id).emit("receive_message", saved);
+        io.to(workflow_id).emit("receive_message", savedMessage);
+
       } catch (err) {
-        console.error("[WS] send_message error:", err.message);
-        socket.emit("error_event", { message: "Failed to send message." });
+
+        console.error("[WS] send_message error:", err);
+
+        socket.emit("error_event", {
+          message: "Failed to send message"
+        });
+
       }
+
     });
+
 
     /**
-     * typing — ephemeral typing indicator.
+     * typing indicator
      */
+
     socket.on("typing", () => {
+
       const { user, workflow_id } = socket.data || {};
-      if (!user || !workflow_id) return;
+
+      if (!user) return;
+      if (!workflow_id) return;
+
       socket.to(workflow_id).emit("user_typing", {
         user_id: user.id,
-        name: user.name,
+        name: user.name
       });
+
     });
+
 
     socket.on("stop_typing", () => {
+
       const { user, workflow_id } = socket.data || {};
-      if (!user || !workflow_id) return;
+
+      if (!user) return;
+      if (!workflow_id) return;
+
       socket.to(workflow_id).emit("user_stop_typing", {
-        user_id: user.id,
+        user_id: user.id
       });
+
     });
 
+
+    /**
+     * disconnect
+     */
+
     socket.on("disconnect", () => {
+
       const { user, workflow_id } = socket.data || {};
-      if (user && workflow_id) {
-        socket.to(workflow_id).emit("user_left", {
-          user: { id: user.id, name: user.name },
-          workflow_id,
-        });
-        console.log(`[WS] ${user.name} left room ${workflow_id}`);
-      }
+
+      if (!user) return;
+      if (!workflow_id) return;
+
+      socket.to(workflow_id).emit("user_left", {
+        user: {
+          id: user.id,
+          name: user.name
+        },
+        workflow_id
+      });
+
+      console.log(`[WS] ${user.name} left room ${workflow_id}`);
+
     });
+
   });
+
 }
 
 module.exports = registerSocket;
