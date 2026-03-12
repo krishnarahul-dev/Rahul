@@ -171,27 +171,23 @@ Each conversation shows unread message badges.
 ---
 
 # Folder Structure
+client-angular/
+src/app/
+chat/
+components/
+services/
+models/
+utilities/
 
+server/
+controllers/
+models/
+routes/
+socket.js
+server.js
 
-client-angular
-├── src/app
-│ ├── chat
-│ │ ├── components
-│ │ ├── services
-│ │ ├── models
-│ │ └── utilities
-
-server
-├── controllers
-├── models
-├── routes
-├── socket.js
-└── server.js
-
-sql
-└── migration-v2.sql
-
-
+sql/
+migration-v2.sql
 ---
 
 # Core Capability Summary
