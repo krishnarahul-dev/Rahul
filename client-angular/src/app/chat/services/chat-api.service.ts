@@ -5,15 +5,13 @@ import { Conversation, ChatMessage, ChatUser } from '../models/chat.models';
 
 @Injectable({ providedIn: 'root' })
 export class ChatApiService {
-  private baseUrl = 'https://cflow-chat-server.onrender.com/api';
+  private baseUrl = 'https://rahul-xq9c.onrender.com/api';
 
   constructor(private http: HttpClient) {}
 
   setBaseUrl(url: string): void {
     this.baseUrl = url.replace(/\/+$/, '');
   }
-
-  // ── V1 (backward compatible) ───────────────────────────
 
   getConversation(workflowId: string): Observable<Conversation> {
     return this.http.get<Conversation>(`${this.baseUrl}/conversations/${workflowId}`);
@@ -37,8 +35,6 @@ export class ChatApiService {
     return this.http.get<ChatUser[]>(`${this.baseUrl}/users/search`, { params });
   }
 
-  // ── V2 endpoints ───────────────────────────────────────
-
   listConversations(userId: string, type?: string): Observable<Conversation[]> {
     let params = new HttpParams().set('user_id', userId);
     if (type) params = params.set('type', type);
@@ -57,13 +53,16 @@ export class ChatApiService {
 
   createDirect(userId: string, targetUserId: string): Observable<Conversation> {
     return this.http.post<Conversation>(`${this.baseUrl}/conversations/v2/direct`, {
-      user_id: userId, target_user_id: targetUserId
+      user_id: userId,
+      target_user_id: targetUserId
     });
   }
 
   createGroup(userId: string, name: string, memberIds: string[]): Observable<Conversation> {
     return this.http.post<Conversation>(`${this.baseUrl}/conversations/v2/group`, {
-      user_id: userId, name, member_ids: memberIds
+      user_id: userId,
+      name,
+      member_ids: memberIds
     });
   }
 

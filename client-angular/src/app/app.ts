@@ -1,6 +1,8 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ChatLayoutComponent } from './chat/components/chat-layout/chat-layout.component';
+import { ChatApiService } from './chat/services/chat-api.service';
+import { ChatSocketService } from './chat/services/chat-socket.service';
 
 type DemoUser = {
   id: string;
@@ -85,6 +87,15 @@ export class App {
   ];
 
   selectedUser: DemoUser | null = null;
+
+  constructor(
+    private api: ChatApiService,
+    private socket: ChatSocketService
+  ) {
+    const backend = 'https://rahul-xq9c.onrender.com';
+    this.api.setBaseUrl(`${backend}/api`);
+    this.socket.setServerUrl(backend);
+  }
 
   selectUser(user: DemoUser) { this.selectedUser = { ...user }; }
   switchUser() { this.selectedUser = null; }
