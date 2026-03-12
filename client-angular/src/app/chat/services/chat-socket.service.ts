@@ -8,105 +8,100 @@ export class ChatSocketService implements OnDestroy {
   private socket: Socket | null = null;
   private serverUrl = 'https://cflow-chat-server.onrender.com';
 
-  // ── Observable streams for components to subscribe to ──
-  private messageSubject = new Subject<ChatMessage>();
-  private typingSubject = new Subject<TypingEvent>();
-  private stopTypingSubject = new Subject<{ user_id: string }>();
-  private userJoinedSubject = new Subject<{ user: Partial<ChatUser>; workflow_id: string }>();
-  private userLeftSubject = new Subject<{ user: Partial<ChatUser>; workflow_id: string }>();
-  private errorSubject = new Subject<{ message: string }>();
+  private messageSubject     = new Subject<ChatMessage>();
+  private typingSubject      = new Subject<TypingEvent>();
+  private stopTypingSubject  = new Subject<{ conversation_id?: string; user_id: string }>();
+  private userJoinedSubject  = new Subject<any>();
+  private userLeftSubject    = new Subject<any>();
+  private presenceSubject    = new Subject<{ user_id: string; status: string }>();
+  private unreadSubject      = new Subject<{ conversation_id: string }>();
+  private mentionedSubject   = new Subject<any>();
+  private convCreatedSubject = new Subject<any>();
+  private errorSubject       = new Subject<{ message: string }>();
 
-  readonly message$: Observable<ChatMessage> = this.messageSubject.asObservable();
-  readonly typing$: Observable<TypingEvent> = this.typingSubject.asObservable();
-  readonly stopTyping$: Observable<{ user_id: string }> = this.stopTypingSubject.asObservable();
-  readonly userJoined$ = this.userJoinedSubject.asObservable();
-  readonly userLeft$ = this.userLeftSubject.asObservable();
-  readonly error$ = this.errorSubject.asObservable();
+  readonly message$      = this.messageSubject.asObservable();
+  readonly typing$       = this.typingSubject.asObservable();
+  readonly stopTyping$   = this.stopTypingSubject.asObservable();
+  readonly userJoined$   = this.userJoinedSubject.asObservable();
+  readonly userLeft$     = this.userLeftSubject.asObservable();
+  readonly presence$     = this.presenceSubject.asObservable();
+  readonly unread$       = this.unreadSubject.asObservable();
+  readonly mentioned$    = this.mentionedSubject.asObservable();
+  readonly convCreated$  = this.convCreatedSubject.asObservable();
+  readonly error$        = this.errorSubject.asObservable();
 
-  /**
-   * Set the socket server URL.
-   * Call before connect() if the chat server is on a different host.
-   */
-  setServerUrl(url: string): void {
-    this.serverUrl = url;
-  }
+  setServerUrl(url: string): void { this.serverUrl = url; }
 
-  /**
-   * Open a socket connection and join a workflow room.
-   */
+  /** V1: connect to a specific workflow room. */
   connect(workflowId: string, user: ChatUser): void {
-    // Disconnect previous connection if any
     this.disconnect();
-
-    this.socket = io(this.serverUrl, {
-      transports: ['websocket', 'polling'],
-      withCredentials: true,
-    });
+    this.socket = io(this.serverUrl, { transports: ['websocket', 'polling'], withCredentials: true });
 
     this.socket.on('connect', () => {
       this.socket!.emit('join_workflow', {
         workflow_id: workflowId,
-        user: {
-          cflow_id: user.cflow_id,
-          name: user.name,
-          email: user.email,
-        },
+        user: { cflow_id: user.cflow_id, name: user.name, email: user.email },
       });
     });
 
-    // ── Wire server events to RxJS subjects ────────────
-    this.socket.on('receive_message', (msg: ChatMessage) => {
-      this.messageSubject.next(msg);
-    });
-
-    this.socket.on('user_typing', (data: TypingEvent) => {
-      this.typingSubject.next(data);
-    });
-
-    this.socket.on('user_stop_typing', (data: { user_id: string }) => {
-      this.stopTypingSubject.next(data);
-    });
-
-    this.socket.on('user_joined', (data: any) => {
-      this.userJoinedSubject.next(data);
-    });
-
-    this.socket.on('user_left', (data: any) => {
-      this.userLeftSubject.next(data);
-    });
-
-    this.socket.on('error_event', (data: { message: string }) => {
-      this.errorSubject.next(data);
-    });
-
-    this.socket.on('disconnect', (reason: string) => {
-      console.warn('[ChatSocket] Disconnected:', reason);
-    });
+    this.wireEvents();
   }
 
-  /**
-   * Send a message through the socket (preferred over REST for real-time).
-   */
-  sendMessage(message: string): void {
-    this.socket?.emit('send_message', { message });
+  /** V2: authenticate and auto-join all conversations. */
+  connectV2(user: ChatUser): void {
+    this.disconnect();
+    this.socket = io(this.serverUrl, { transports: ['websocket', 'polling'], withCredentials: true });
+
+    this.socket.on('connect', () => {
+      this.socket!.emit('authenticate', {
+        user: { cflow_id: user.cflow_id, name: user.name, email: user.email },
+      });
+    });
+
+    this.socket.on('authenticated', (data: any) => {
+      console.log('[Chat] Authenticated, conversations:', data.conversations?.length);
+    });
+
+    this.wireEvents();
   }
 
-  /** Broadcast typing start. */
-  emitTyping(): void {
-    this.socket?.emit('typing');
+  private wireEvents(): void {
+    if (!this.socket) return;
+    this.socket.on('receive_message',      (msg: any) => this.messageSubject.next(msg));
+    this.socket.on('user_typing',          (evt: any) => this.typingSubject.next(evt));
+    this.socket.on('user_stop_typing',     (evt: any) => this.stopTypingSubject.next(evt));
+    this.socket.on('user_joined',          (evt: any) => this.userJoinedSubject.next(evt));
+    this.socket.on('user_left',            (evt: any) => this.userLeftSubject.next(evt));
+    this.socket.on('presence_change',      (evt: any) => this.presenceSubject.next(evt));
+    this.socket.on('unread_update',        (evt: any) => this.unreadSubject.next(evt));
+    this.socket.on('mentioned',            (evt: any) => this.mentionedSubject.next(evt));
+    this.socket.on('conversation_created', (evt: any) => this.convCreatedSubject.next(evt));
+    this.socket.on('error_event',          (evt: any) => this.errorSubject.next(evt));
+    this.socket.on('disconnect',           (reason: string) => console.warn('[ChatSocket] Disconnected:', reason));
   }
 
-  /** Broadcast typing stop. */
-  emitStopTyping(): void {
-    this.socket?.emit('stop_typing');
+  joinConversation(conversationId: string): void {
+    this.socket?.emit('join_conversation', { conversation_id: conversationId });
   }
 
-  /** True if the socket is currently connected. */
-  get isConnected(): boolean {
-    return this.socket?.connected ?? false;
+  sendMessage(message: string, conversationId?: string): void {
+    this.socket?.emit('send_message', { message, conversation_id: conversationId });
   }
 
-  /** Clean disconnect. */
+  markRead(conversationId: string): void {
+    this.socket?.emit('mark_read', { conversation_id: conversationId });
+  }
+
+  emitTyping(conversationId?: string): void {
+    this.socket?.emit('typing', conversationId ? { conversation_id: conversationId } : undefined);
+  }
+
+  emitStopTyping(conversationId?: string): void {
+    this.socket?.emit('stop_typing', conversationId ? { conversation_id: conversationId } : undefined);
+  }
+
+  get isConnected(): boolean { return this.socket?.connected ?? false; }
+
   disconnect(): void {
     if (this.socket) {
       this.socket.removeAllListeners();
@@ -115,13 +110,5 @@ export class ChatSocketService implements OnDestroy {
     }
   }
 
-  ngOnDestroy(): void {
-    this.disconnect();
-    this.messageSubject.complete();
-    this.typingSubject.complete();
-    this.stopTypingSubject.complete();
-    this.userJoinedSubject.complete();
-    this.userLeftSubject.complete();
-    this.errorSubject.complete();
-  }
+  ngOnDestroy(): void { this.disconnect(); }
 }
