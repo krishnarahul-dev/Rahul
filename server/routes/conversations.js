@@ -3,23 +3,17 @@ const ctrl = require("../controllers/conversationController");
 
 const router = Router();
 
-/*
-GET /api/conversations/:workflowId
-Fetch existing conversation for a workflow.
-If it does not exist, controller will create it.
-*/
-router.get("/:workflowId", ctrl.getByWorkflow);
+// ── V2 routes (must come BEFORE :workflowId to avoid conflicts) ──
+router.get("/v2/list",            ctrl.list);
+router.get("/v2/unread",          ctrl.unreadCount);
+router.post("/v2/direct",         ctrl.createDirect);
+router.post("/v2/group",          ctrl.createGroup);
+router.get("/v2/:id",             ctrl.getById);
+router.post("/v2/:id/read",       ctrl.markRead);
+router.delete("/v2/:id/participants/:userId", ctrl.removeParticipant);
 
-/*
-POST /api/conversations/:conversationId/participants
-Body:
-{
-  "cflow_id": "cflow_1001",
-  "name": "User Name",
-  "email": "user@email.com"
-}
-Adds a participant to the conversation.
-*/
-router.post("/:conversationId/participants", ctrl.addParticipant);
+// ── V1 backward-compatible routes ──
+router.get("/:workflowId",                    ctrl.getByWorkflow);
+router.post("/:conversationId/participants",   ctrl.addParticipant);
 
 module.exports = router;
