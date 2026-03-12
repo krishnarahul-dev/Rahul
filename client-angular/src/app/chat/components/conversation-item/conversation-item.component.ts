@@ -25,7 +25,7 @@ import { avatarColor, initials } from '../../services/avatar.util';
         </div>
         <div class="btm">
           <span class="preview" *ngIf="conversation.last_message">
-            <strong *ngIf="conversation.type !== 'direct' && conversation.type">{{ conversation.last_message.sender?.name?.split(' ')[0] }}: </strong>
+            <strong *ngIf="conversation.type !== 'direct' && conversation.type">{{ (conversation.last_message?.sender?.name || 'Unknown').split(' ')[0] }}: </strong>
             {{ (conversation.last_message.message || '').slice(0, 45) }}
           </span>
           <span class="badge" *ngIf="(conversation.unread_count || 0) > 0">{{ conversation.unread_count }}</span>
