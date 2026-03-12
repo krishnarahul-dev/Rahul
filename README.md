@@ -1,438 +1,530 @@
-<h1>Cflow Internal Chat System</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cflow Workflow Chat System</title>
+  <style>
+    :root{
+      --bg:#f6f8fc;
+      --card:#ffffff;
+      --text:#172033;
+      --muted:#5f6b85;
+      --line:#e7ebf3;
+      --primary:#2f6fed;
+      --primary-soft:#eef4ff;
+      --code:#0f172a;
+      --shadow:0 10px 30px rgba(15,23,42,.06);
+      --radius:18px;
+    }
 
-<p>
-A lightweight real-time workflow chat system designed to integrate directly inside Cflow workflow request pages.
-</p>
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter,Segoe UI,Arial,sans-serif;
+      background:var(--bg);
+      color:var(--text);
+      line-height:1.65;
+    }
 
-<p>
-Each workflow request automatically gets a dedicated conversation room where participants can collaborate, discuss approvals, and exchange messages.
-</p>
+    .wrap{
+      max-width:1100px;
+      margin:0 auto;
+      padding:40px 20px 70px;
+    }
 
-<p>
-The system supports persistent chat history, user mentions, typing indicators, and real-time message delivery.
-</p>
+    .hero{
+      background:linear-gradient(135deg,#1f56d8,#3a7bff);
+      color:#fff;
+      border-radius:24px;
+      padding:38px 34px;
+      box-shadow:var(--shadow);
+      margin-bottom:28px;
+    }
 
-<hr>
+    .hero h1{
+      margin:0 0 12px;
+      font-size:clamp(28px,4vw,44px);
+      line-height:1.15;
+      letter-spacing:-0.03em;
+    }
 
-<h2>System Architecture</h2>
+    .hero p{
+      margin:0;
+      max-width:820px;
+      color:rgba(255,255,255,.9);
+      font-size:16px;
+    }
 
-<pre>
-Browser (Workflow Page)
+    .section{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:28px;
+      margin-bottom:22px;
+      box-shadow:var(--shadow);
+    }
+
+    .section h2{
+      margin:0 0 18px;
+      font-size:26px;
+      letter-spacing:-0.02em;
+    }
+
+    .section h3{
+      margin:22px 0 10px;
+      font-size:19px;
+      letter-spacing:-0.01em;
+    }
+
+    .section p{
+      margin:0 0 12px;
+      color:var(--muted);
+    }
+
+    .meta{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+      gap:16px;
+    }
+
+    .meta-card{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:18px;
+      background:#fff;
+    }
+
+    .meta-card h4{
+      margin:0 0 10px;
+      font-size:16px;
+      color:var(--text);
+    }
+
+    .label{
+      font-weight:700;
+      color:var(--text);
+    }
+
+    ul{
+      margin:10px 0 0 20px;
+      padding:0;
+      color:var(--muted);
+    }
+
+    li{margin:6px 0}
+
+    .codebox{
+      background:var(--code);
+      color:#e5edf9;
+      border-radius:14px;
+      padding:16px 18px;
+      overflow:auto;
+      font-family:Consolas,Monaco,monospace;
+      font-size:14px;
+      line-height:1.6;
+      margin:12px 0 0;
+      white-space:pre-wrap;
+      word-break:break-word;
+    }
+
+    .pill-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:10px;
+    }
+
+    .pill{
+      padding:8px 12px;
+      border-radius:999px;
+      background:var(--primary-soft);
+      color:var(--primary);
+      font-weight:600;
+      font-size:13px;
+      border:1px solid #d9e6ff;
+    }
+
+    .grid-2{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+      gap:18px;
+    }
+
+    .subcard{
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:18px;
+      background:#fff;
+    }
+
+    .subcard h4{
+      margin:0 0 10px;
+      font-size:17px;
+    }
+
+    .divider{
+      height:1px;
+      background:var(--line);
+      margin:22px 0;
+    }
+
+    .foot{
+      text-align:center;
+      color:var(--muted);
+      font-size:14px;
+      margin-top:10px;
+    }
+
+    @media (max-width:640px){
+      .wrap{padding:22px 14px 50px}
+      .hero,.section{padding:22px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <section class="hero">
+      <h1>Cflow Workflow Chat System</h1>
+      <p>
+        A lightweight real-time workflow chat platform designed to integrate directly inside Cflow workflow request pages.
+        The system enables workflow participants to communicate, discuss approvals, and collaborate without leaving the workflow interface.
+        It supports Direct Messages, Group Chats, and Workflow Conversations with persistent message storage and real-time communication.
+      </p>
+    </section>
+
+    <section class="section">
+      <h2>Deployment Infrastructure</h2>
+
+      <div class="meta">
+        <div class="meta-card">
+          <h4>Frontend</h4>
+          <p><span class="label">Hosting Platform:</span> Vercel</p>
+          <p><span class="label">Technology Stack:</span></p>
+          <div class="pill-row">
+            <span class="pill">Angular</span>
+            <span class="pill">TypeScript</span>
+            <span class="pill">HTML</span>
+            <span class="pill">CSS</span>
+            <span class="pill">Socket.io Client</span>
+            <span class="pill">REST API Integration</span>
+          </div>
+          <p style="margin-top:14px;"><span class="label">Frontend URL:</span></p>
+          <div class="codebox">https://rahul-green.vercel.app</div>
+          <p style="margin-top:14px;"><span class="label">Responsibilities:</span></p>
+          <ul>
+            <li>Chat interface rendering</li>
+            <li>Conversation sidebar management</li>
+            <li>Direct and group chat creation</li>
+            <li>Real-time message updates</li>
+            <li>Presence indicators</li>
+            <li>Unread message badges</li>
+          </ul>
+        </div>
+
+        <div class="meta-card">
+          <h4>Backend</h4>
+          <p><span class="label">Hosting Platform:</span> Render Web Service</p>
+          <p><span class="label">Technology Stack:</span></p>
+          <div class="pill-row">
+            <span class="pill">Node.js</span>
+            <span class="pill">Express.js</span>
+            <span class="pill">Socket.io</span>
+            <span class="pill">node-postgres (pg)</span>
+            <span class="pill">dotenv</span>
+            <span class="pill">cors</span>
+          </div>
+          <p style="margin-top:14px;"><span class="label">Backend API:</span></p>
+          <div class="codebox">https://cflow-chat-server.onrender.com</div>
+          <p style="margin-top:14px;"><span class="label">Responsibilities:</span></p>
+          <ul>
+            <li>REST API endpoints</li>
+            <li>WebSocket event handling</li>
+            <li>Message persistence</li>
+            <li>Conversation participant management</li>
+            <li>User presence tracking</li>
+            <li>Real-time messaging</li>
+          </ul>
+        </div>
+
+        <div class="meta-card">
+          <h4>Database</h4>
+          <p><span class="label">Provider:</span> Render PostgreSQL</p>
+          <p><span class="label">Database Engine:</span></p>
+          <div class="codebox">PostgreSQL</div>
+          <p style="margin-top:14px;"><span class="label">Connection Method:</span></p>
+          <div class="codebox">DATABASE_URL
+pg.Pool connection pooling</div>
+          <p style="margin-top:14px;"><span class="label">Responsibilities:</span></p>
+          <ul>
+            <li>Store users</li>
+            <li>Store conversations</li>
+            <li>Store messages</li>
+            <li>Track conversation participants</li>
+            <li>Maintain unread counts</li>
+            <li>Track user presence</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Repository</h2>
+      <p><span class="label">GitHub Repository</span></p>
+      <div class="codebox">https://github.com/krishnarahul-dev/Rahul</div>
+
+      <p style="margin-top:16px;"><span class="label">Detailed Documentation</span></p>
+      <div class="codebox">https://github.com/krishnarahul-dev/Rahul/blob/main/README.md</div>
+
+      <p style="margin-top:16px;"><span class="label">Contains:</span></p>
+      <ul>
+        <li>Upgrade instructions</li>
+        <li>System architecture</li>
+        <li>API reference</li>
+        <li>Deployment guide</li>
+        <li>Folder structure</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>System Architecture</h2>
+      <div class="codebox">Browser (Angular Frontend)
         │
         │ REST API + WebSocket
         ▼
-Frontend Application (Vercel)
+Node.js / Express Backend (Render)
         │
+        │ PostgreSQL Driver (pg)
         ▼
-Node.js Backend (Render Web Service)
-        │
-        ▼
-PostgreSQL Database (Render Managed DB)
-</pre>
-
-<h2>Architecture Diagram</h2>
-
-<pre>
-┌──────────────────────────────────────────────────────────┐
-│ Cflow Workflow Page                                      │
-│                                                          │
-│   Chat Component                                         │
-│   &lt;ChatWindow workflowId="1023" currentUser={...} /&gt;     │
-│                                                          │
-└───────────────▲──────────────────────────────────────────┘
-                │
-                │ REST + WebSocket
-                │
-┌───────────────┴──────────────────────────────────────────┐
-│ Backend API Server                                       │
-│ Node.js + Express + Socket.io                            │
-│                                                          │
-│ REST Endpoints                                           │
-│ /api/conversations                                       │
-│ /api/messages                                            │
-│ /api/users                                               │
-│                                                          │
-│ WebSocket Events                                         │
-│ join_workflow                                            │
-│ send_message                                             │
-│ typing indicators                                        │
-└───────────────▲──────────────────────────────────────────┘
-                │
-                │ PostgreSQL connection
-                ▼
-┌──────────────────────────────────────────────────────────┐
-│ PostgreSQL Database                                      │
-│                                                          │
-│ users                                                    │
-│ conversations                                            │
-│ conversation_participants                                │
-│ messages                                                 │
-└──────────────────────────────────────────────────────────┘
-</pre>
-
-<hr>
-
-<h2>Hosting Infrastructure</h2>
-
-<h3>Frontend</h3>
-<p><strong>Hosted on:</strong> Vercel</p>
-<p><strong>Frontend URL:</strong></p>
-
-<pre>https://rahul-green.vercel.app</pre>
-
-<p><strong>Responsibilities:</strong></p>
-<ul>
-  <li>Chat UI rendering</li>
-  <li>WebSocket client connection</li>
-  <li>REST API communication</li>
-  <li>Message display and input</li>
-</ul>
-
-<h3>Backend</h3>
-<p><strong>Hosted on:</strong> Render Web Service</p>
-<p><strong>Backend API:</strong></p>
-
-<pre>https://cflow-chat-server.onrender.com</pre>
-
-<p><strong>Responsibilities:</strong></p>
-<ul>
-  <li>REST API handling</li>
-  <li>WebSocket server</li>
-  <li>Conversation management</li>
-  <li>Message storage</li>
-  <li>User management</li>
-</ul>
-
-<h3>Database</h3>
-<p><strong>Hosted on:</strong> Render Managed PostgreSQL</p>
-<p><strong>Database Engine:</strong></p>
-
-<pre>PostgreSQL</pre>
-
-<p><strong>Connection handled using:</strong></p>
-
-<pre>
-node-postgres (pg)
-pg.Pool connection pooling
-DATABASE_URL environment variable
-</pre>
-
-<hr>
-
-<h2>Technology Stack</h2>
-
-<table>
-  <thead>
-    <tr>
-      <th>Layer</th>
-      <th>Technology</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>Frontend</td>
-      <td>Angular / TypeScript / HTML / CSS</td>
-    </tr>
-    <tr>
-      <td>Backend</td>
-      <td>Node.js / Express.js</td>
-    </tr>
-    <tr>
-      <td>Realtime</td>
-      <td>Socket.io</td>
-    </tr>
-    <tr>
-      <td>Database</td>
-      <td>PostgreSQL</td>
-    </tr>
-    <tr>
-      <td>Hosting</td>
-      <td>Vercel (Frontend), Render (Backend + DB)</td>
-    </tr>
-    <tr>
-      <td>API</td>
-      <td>REST API</td>
-    </tr>
-    <tr>
-      <td>Communication</td>
-      <td>HTTP + WebSocket</td>
-    </tr>
-  </tbody>
-</table>
-
-<hr>
-
-<h2>Project Folder Structure</h2>
-
-<pre>
-cflow-chat/
-
-server/
-│
-├── config/
-│   └── db.js
-│
-├── controllers/
-│   ├── conversationController.js
-│   ├── messageController.js
-│   └── userController.js
-│
-├── models/
-│   ├── Conversation.js
-│   ├── Message.js
-│   └── User.js
-│
-├── routes/
-│   ├── conversations.js
-│   ├── messages.js
-│   └── users.js
-│
-├── socket.js
-├── server.js
-├── package.json
-└── .env
-
-client/
-│
-├── components/
-│   ├── ChatWindow
-│   ├── MessageBubble
-│   └── MentionDropdown
-│
-├── services/
-│   ├── chat-api.service.ts
-│   └── chat-socket.service.ts
-│
-└── application files
-
-README.md
-</pre>
-
-<hr>
-
-<h2>Database Schema</h2>
-
-<h3>conversations</h3>
-<p>Stores one conversation per workflow request.</p>
-
-<pre>
-id UUID
-workflow_id VARCHAR
-title TEXT
-created_at TIMESTAMP
-</pre>
-
-<h3>users</h3>
-<p>Stores users participating in chat.</p>
-
-<pre>
-id UUID
-cflow_id VARCHAR
-name TEXT
-email TEXT
-</pre>
-
-<h3>conversation_participants</h3>
-<p>Tracks participants inside a conversation.</p>
-
-<pre>
-conversation_id UUID
-user_id UUID
-</pre>
-
-<h3>messages</h3>
-<p>Stores chat message history.</p>
-
-<pre>
-id UUID
-conversation_id UUID
-sender_id UUID
-message TEXT
-created_at TIMESTAMP
-</pre>
-
-<hr>
-
-<h2>API Reference</h2>
-
-<h3>Conversation API</h3>
-
-<p><strong>Get or create workflow conversation</strong></p>
-<pre>GET /api/conversations/:workflowId</pre>
-
-<p><strong>Add participant</strong></p>
-<pre>POST /api/conversations/:conversationId/participants</pre>
-
-<h3>Message API</h3>
-
-<p><strong>Send message</strong></p>
-<pre>POST /api/messages</pre>
-
-<p><strong>Get messages</strong></p>
-<pre>GET /api/messages/:conversationId</pre>
-
-<p><strong>Mention notifications</strong></p>
-<pre>GET /api/messages/mentions/:userId</pre>
-
-<h3>User API</h3>
-
-<p><strong>User search for mentions</strong></p>
-<pre>GET /api/users/search?q=</pre>
-
-<hr>
-
-<h2>WebSocket Events</h2>
-
-<h3>Client → Server</h3>
-
-<table>
-  <thead>
-    <tr>
-      <th>Event</th>
-      <th>Description</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>join_workflow</td>
-      <td>Join workflow chat room</td>
-    </tr>
-    <tr>
-      <td>send_message</td>
-      <td>Send message</td>
-    </tr>
-    <tr>
-      <td>typing</td>
-      <td>User typing</td>
-    </tr>
-    <tr>
-      <td>stop_typing</td>
-      <td>Stop typing</td>
-    </tr>
-  </tbody>
-</table>
-
-<h3>Server → Client</h3>
-
-<table>
-  <thead>
-    <tr>
-      <th>Event</th>
-      <th>Description</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>receive_message</td>
-      <td>New message broadcast</td>
-    </tr>
-    <tr>
-      <td>user_joined</td>
-      <td>Participant joined</td>
-    </tr>
-    <tr>
-      <td>user_left</td>
-      <td>Participant left</td>
-    </tr>
-    <tr>
-      <td>user_typing</td>
-      <td>Typing indicator</td>
-    </tr>
-    <tr>
-      <td>user_stop_typing</td>
-      <td>Typing stopped</td>
-    </tr>
-    <tr>
-      <td>error_event</td>
-      <td>Error notification</td>
-    </tr>
-  </tbody>
-</table>
-
-<hr>
-
-<h2>Setup Instructions</h2>
-
-<h3>Prerequisites</h3>
-
-<pre>
-Node.js 18+
-PostgreSQL
-npm
-</pre>
-
-<h3>Backend Setup</h3>
-
-<pre>
-cd server
-npm install
-npm start
-</pre>
-
-<p><strong>Server runs at:</strong></p>
-<pre>http://localhost:4000</pre>
-
-<h3>Frontend Setup</h3>
-
-<pre>
-cd client
-npm install
-npm run dev
-</pre>
-
-<p><strong>Frontend runs at:</strong></p>
-<pre>http://localhost:5173</pre>
-
-<hr>
-
-<h2>Deployment</h2>
-
-<h3>Backend</h3>
-<p>Hosted on <strong>Render Web Service</strong></p>
-<p>Deployment triggered via Git push.</p>
-
-<h3>Frontend</h3>
-<p>Hosted on <strong>Vercel</strong></p>
-<p>Automatic deployment through GitHub integration.</p>
-
-<hr>
-
-<h2>Core Features</h2>
-
-<h3>Workflow-Based Conversations</h3>
-<p>Each workflow request automatically creates its own chat room.</p>
-
-<h3>Real-Time Messaging</h3>
-<p>Socket.io enables instant message delivery between participants.</p>
-
-<h3>User Mentions</h3>
-<p>Typing <code>@</code> triggers user search and allows mentioning participants.</p>
-
-<h3>Typing Indicators</h3>
-<p>Users can see who is currently typing in the conversation.</p>
-
-<h3>Message Persistence</h3>
-<p>All messages are stored permanently in PostgreSQL.</p>
-
-<h3>Participant Management</h3>
-<p>Participants are automatically tracked when they join a workflow chat.</p>
-
-<hr>
-
-<h2>System Status</h2>
-
-<p><strong>Frontend</strong></p>
-<pre>Running on Vercel</pre>
-
-<p><strong>Backend</strong></p>
-<pre>Running on Render Web Service</pre>
-
-<p><strong>Database</strong></p>
-<pre>Render PostgreSQL</pre>
-
-<p><strong>Communication</strong></p>
-<pre>REST API + WebSocket</pre>
-
-<p>
-The system provides a fully functional real-time workflow chat platform integrated with Cflow workflows.
-</p>
+PostgreSQL Database (Render)</div>
+    </section>
+
+    <section class="section">
+      <h2>Core Features</h2>
+
+      <h3>Workflow Conversations</h3>
+      <p>Each workflow request automatically creates a dedicated conversation where workflow participants can discuss approvals and decisions.</p>
+
+      <h3>Direct Messaging</h3>
+      <p>Users can start private one-to-one conversations independent of workflow requests.</p>
+
+      <h3>Group Chats</h3>
+      <p>Multiple users can collaborate in shared chat groups.</p>
+
+      <h3>Real-Time Messaging</h3>
+      <p>Socket.io enables real-time message delivery between participants.</p>
+
+      <h3>Persistent Message Storage</h3>
+      <p>All messages are stored in PostgreSQL so chat history remains available even after page refresh.</p>
+
+      <h3>User Mentions</h3>
+      <p>Users can mention other participants using:</p>
+      <div class="codebox">@username</div>
+      <p>Mention suggestions appear in the UI.</p>
+
+      <h3>Typing Indicators</h3>
+      <p>Participants can see when another user is typing.</p>
+
+      <h3>Presence Indicators</h3>
+      <p>User status is tracked and displayed as:</p>
+      <div class="codebox">Online
+Away
+Offline</div>
+
+      <h3>Unread Message Counters</h3>
+      <p>Each conversation shows unread message badges to notify users about new messages.</p>
+    </section>
+
+    <section class="section">
+      <h2>Frontend Architecture</h2>
+
+      <div class="grid-2">
+        <div class="subcard">
+          <h4>Main Layout</h4>
+          <div class="codebox">ChatLayoutComponent</div>
+          <ul>
+            <li>Sidebar conversation list</li>
+            <li>Chat panel rendering</li>
+            <li>Dialog windows for new chats and groups</li>
+          </ul>
+        </div>
+
+        <div class="subcard">
+          <h4>Conversation Sidebar</h4>
+          <div class="codebox">ConversationListComponent
+ConversationItemComponent</div>
+          <ul>
+            <li>Direct messages</li>
+            <li>Group chats</li>
+            <li>Workflow chats</li>
+            <li>Last message preview</li>
+            <li>Unread badge</li>
+            <li>Online status</li>
+          </ul>
+        </div>
+
+        <div class="subcard">
+          <h4>Chat Window</h4>
+          <div class="codebox">ChatPanelComponent
+ChatWindowComponent
+MessageBubbleComponent
+MentionDropdownComponent</div>
+          <ul>
+            <li>Display message history</li>
+            <li>Real-time message updates</li>
+            <li>Mention dropdown suggestions</li>
+            <li>Typing indicators</li>
+          </ul>
+        </div>
+
+        <div class="subcard">
+          <h4>Dialog Components</h4>
+          <div class="codebox">NewChatDialogComponent
+GroupCreateDialogComponent</div>
+          <ul>
+            <li>Create new direct messages</li>
+            <li>Create group conversations</li>
+            <li>Add members</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3>Frontend Services</h3>
+      <div class="codebox">chat-api.service.ts
+chat-socket.service.ts
+avatar.util.ts</div>
+      <ul>
+        <li><strong>API Service:</strong> Fetch conversations, create direct messages, create group chats, mark messages as read, retrieve unread counts</li>
+        <li><strong>Socket Service:</strong> Authenticate socket connection, join conversation rooms, listen for new messages, broadcast typing events</li>
+        <li><strong>Utility Service:</strong> Generate user initials, manage avatar colors</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>Backend Architecture</h2>
+
+      <h3>Core Models</h3>
+      <div class="codebox">User.js
+Conversation.js
+Message.js</div>
+      <ul>
+        <li><strong>User Model:</strong> name, email, presence status, last seen timestamp</li>
+        <li><strong>Conversation Model:</strong> conversation type, workflow association, conversation name, participant relationships</li>
+        <li><strong>Message Model:</strong> sender, message content, timestamp, conversation reference</li>
+      </ul>
+
+      <h3>Controllers</h3>
+      <div class="codebox">conversationController.js
+messageController.js
+userController.js</div>
+      <ul>
+        <li><strong>Conversation Controller:</strong> List conversations, create direct chats, create group chats, mark conversations as read</li>
+        <li><strong>Message Controller:</strong> Send messages, retrieve conversation history</li>
+        <li><strong>User Controller:</strong> Retrieve user list, track presence</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <h2>API Endpoints</h2>
+
+      <h3>Conversation APIs (v2)</h3>
+      <div class="codebox">GET  /api/conversations/v2/list
+GET  /api/conversations/v2/unread
+POST /api/conversations/v2/direct
+POST /api/conversations/v2/group
+GET  /api/conversations/v2/:id
+POST /api/conversations/v2/:id/read</div>
+
+      <h3>User API</h3>
+      <div class="codebox">GET /api/users</div>
+      <p>Returns all system users for chat participants.</p>
+
+      <h3>Legacy APIs (v1 Compatibility)</h3>
+      <div class="codebox">GET  /api/conversations/:workflowId
+POST /api/conversations/:id/participants</div>
+      <p>These endpoints remain active to maintain compatibility with v1 workflow chat.</p>
+    </section>
+
+    <section class="section">
+      <h2>Version Evolution</h2>
+
+      <div class="grid-2">
+        <div class="subcard">
+          <h4>Version 1</h4>
+          <p><strong>Capabilities</strong></p>
+          <ul>
+            <li>Workflow-based conversations</li>
+            <li>Real-time messaging</li>
+            <li>Socket rooms based on workflow ID</li>
+            <li>Basic Angular chat window</li>
+          </ul>
+          <p><strong>Limitations</strong></p>
+          <ul>
+            <li>No direct messages</li>
+            <li>No group chats</li>
+            <li>No presence indicators</li>
+            <li>No unread message tracking</li>
+          </ul>
+        </div>
+
+        <div class="subcard">
+          <h4>Version 2</h4>
+          <p><strong>Enhancements</strong></p>
+          <ul>
+            <li>Unified chat system</li>
+            <li>Direct messages</li>
+            <li>Group conversations</li>
+            <li>User presence tracking</li>
+            <li>Unread message counters</li>
+            <li>Modular Angular architecture</li>
+            <li>Expanded database schema</li>
+            <li>Backward compatibility with v1 APIs</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Folder Structure</h2>
+      <div class="codebox">client-angular
+ ├── src/app
+ │   ├── chat
+ │   │   ├── components
+ │   │   ├── services
+ │   │   ├── models
+ │   │   └── utilities
+
+server
+ ├── controllers
+ ├── models
+ ├── routes
+ ├── socket.js
+ └── server.js
+
+sql
+ └── migration-v2.sql</div>
+    </section>
+
+    <section class="section">
+      <h2>Core Capability Summary</h2>
+      <ul>
+        <li>Workflow-based chat conversations</li>
+        <li>Direct user messaging</li>
+        <li>Group collaboration chats</li>
+        <li>Real-time communication via WebSocket</li>
+        <li>Persistent chat history</li>
+        <li>User presence indicators</li>
+        <li>Typing indicators</li>
+        <li>Mention support</li>
+        <li>Unread message tracking</li>
+        <li>Fully integrated workflow communication system</li>
+      </ul>
+    </section>
+
+    <div class="foot">Cflow Workflow Chat System Documentation</div>
+  </div>
+</body>
+</html>
