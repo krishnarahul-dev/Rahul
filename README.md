@@ -188,6 +188,7 @@ server.js
 
 sql/
 migration-v2.sql
+
 ---
 
 # Core Capability Summary
